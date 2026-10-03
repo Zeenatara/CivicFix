@@ -6,7 +6,10 @@ export function LocationInput({ value, onChange }: { value: string; onChange: (v
   const [busy, setBusy] = useState(false);
 
   const locate = () => {
-    if (!navigator.geolocation) return toast.error("Location isn't available in this browser.");
+    if (!navigator.geolocation) {
+      toast.error("Location isn't available in this browser.");
+      return;
+    }
     setBusy(true);
     navigator.geolocation.getCurrentPosition(
       (p) => {

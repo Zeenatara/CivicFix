@@ -8,7 +8,7 @@ import { ComplaintResult } from "@/components/report/ComplaintResult";
 import { generateComplaint, getReport, saveReport, type CategoryId, type Report } from "@/lib/reports";
 
 export const Route = createFileRoute("/report")({
-  validateSearch: (s: Record<string, unknown>) => ({ id: typeof s.id === "string" ? s.id : undefined }),
+  validateSearch: (s: Record<string, unknown>): { id?: string } => (typeof s["id"] === "string" ? { id: s["id"] } : {}),
   head: () => ({
     meta: [
       { title: "Report an Issue — CivicFix" },

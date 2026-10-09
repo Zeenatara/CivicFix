@@ -1,4 +1,6 @@
-// Data layer for reports. Swap these functions for Supabase calls later.
+// Data layer for reports, stored in the database per signed-in user.
+import { supabase } from "@/integrations/supabase/client";
+
 export type CategoryId = "road" | "streetlight" | "garbage" | "water" | "property" | "other";
 
 export const CATEGORIES: { id: CategoryId; label: string }[] = [
@@ -19,34 +21,49 @@ export interface Report {
   location: string;
   category: CategoryId;
   complaint: string;
-  status: "Draft";
+  status: string;
   createdAt: string;
 }
 
-const KEY = "civicfix.reports";
+type Row = {
+  id: string; description: string; photo: string | null; location: string;
+  category: string; complaint: string; status: string; created_at: string;
+};
 
-export function listReports(): Report[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || "[]");
-  } catch {
-    return [];
-  }
+const fromRow = (r: Row): Report => ({
+  id: r.id, description: r.description, photo: r.photo, location: r.location,
+  category: r.category as CategoryId, complaint: r.complaint, status: r.status, createdAt: r.created_at,
+});
+
+export async function listReports(): Promise<Report[]> {
+  const { data, error } = await supabase
+    .from("reports")
+    .select("id, description, photo, location, category, complaint, status, created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(fromRow);
 }
 
-export function getReport(id: string) {
-  return listReports().find((r) => r.id === id) ?? null;
+export async function getReport(id: string): Promise<Report | null> {
+  const { data, error } = await supabase.from("reports").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? fromRow(data as Row) : null;
 }
 
-export function saveReport(report: Report) {
-  const others = listReports().filter((r) => r.id !== report.id);
-  const all = [report, ...others];
-  try {
-    localStorage.setItem(KEY, JSON.stringify(all));
-  } catch {
-    // Storage full (large photos) — keep text, drop photos.
-    localStorage.setItem(KEY, JSON.stringify(all.map((r) => ({ ...r, photo: null }))));
-  }
+export async function saveReport(report: Report): Promise<Report> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) throw new Error("Please sign in to save reports.");
+  const { data, error } = await supabase
+    .from("reports")
+    .upsert({
+      id: report.id, user_id: u.user.id, description: report.description, photo: report.photo,
+      location: report.location, category: report.category, complaint: report.complaint,
+      status: report.status, created_at: report.createdAt,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return fromRow(data as Row);
 }
 
 const IMPACT: Record<CategoryId, string> = {
@@ -67,14 +84,14 @@ const ACTION: Record<CategoryId, string> = {
   other: "look into the matter and take appropriate action",
 };
 
-// Template-based generator. Replace with an AI call later; keep the signature.
+// Template-based generator.
 export async function generateComplaint(input: {
   description: string;
   location: string;
   category: CategoryId;
   hasPhoto: boolean;
 }): Promise<string> {
-  await new Promise((r) => setTimeout(r, 1100));
+  await new Promise((r) => setTimeout(r, 600));
   const desc = input.description.trim().replace(/\s+/g, " ").replace(/\.?$/, ".");
   const date = new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
   return [

@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: Json
+          message_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: Json
+          message_id: string
+          role: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: Json
+          message_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          category: string
+          complaint: string
+          created_at: string
+          description: string
+          id: string
+          location: string
+          photo: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          complaint: string
+          created_at?: string
+          description: string
+          id?: string
+          location: string
+          photo?: string | null
+          status?: string
+          user_id?: string
+        }
+        Update: {
+          category?: string
+          complaint?: string
+          created_at?: string
+          description?: string
+          id?: string
+          location?: string
+          photo?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
